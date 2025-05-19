@@ -1,11 +1,14 @@
 import os
+import asyncio
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
-WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'  # آدرس وب‌هوک رندر تو
+WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'  # آدرس رندر شما
+
+PORT = int(os.environ.get('PORT', '8443'))  # گرفتن پورت از متغیر محیطی یا مقدار پیشفرض 8443
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
@@ -34,6 +37,7 @@ def get_movies():
 
         if len(movies) >= 20:
             break
+
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -56,24 +60,24 @@ async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text(message, parse_mode='Markdown')
 
-def main():
-    port = int(os.environ.get('PORT', 8443))  # پورت رندر
-    bot = Bot(token=TOKEN)
-    webhook_url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
+async def set_webhook(bot: Bot):
+    await bot.set_webhook(url=WEBHOOK_URL)
 
+def main():
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    # ست کردن وب‌هوک تو تلگرام
-    bot.set_webhook(url=webhook_url)
+    # راه‌اندازی وب‌هوک بصورت async داخل event loop
+    bot = Bot(token=TOKEN)
+    asyncio.get_event_loop().run_until_complete(set_webhook(bot))
 
-    # اجرای وب‌هوک
+    # حالا وب‌هوک رو اجرا می‌کنیم بدون پارامترهای اضافه که باعث ارور شدن
     app.run_webhook(
         listen="0.0.0.0",
-        port=port,
-        webhook_path=f"/webhook/{TOKEN}",
-        webhook_url=webhook_url,
+        port=PORT,
+        webhook_url=WEBHOOK_URL,
     )
 
 if __name__ == '__main__':
