@@ -62,13 +62,12 @@ def main():
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    PORT = int(os.environ.get('PORT', '8443'))
+    PORT = int(os.environ.get('PORT', 8443))
     WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com/webhook'
 
     app.run_webhook(
-        listen='0.0.0.0',
+        host='0.0.0.0',
         port=PORT,
-        path='/webhook',
         webhook_url=WEBHOOK_URL
     )
 
