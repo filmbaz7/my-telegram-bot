@@ -37,7 +37,9 @@ def get_movies():
 
         if len(movies) >= 20:
             break
-  print("Movies found:", movies)  # اینجا اضافه کن
+
+    print("Movies found:", movies)  # پرینت برای دیباگ
+
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,11 +71,11 @@ def main():
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    # راه‌اندازی وب‌هوک بصورت async داخل event loop
+    # تنظیم وبهوک بصورت async
     bot = Bot(token=TOKEN)
     asyncio.get_event_loop().run_until_complete(set_webhook(bot))
 
-    # حالا وب‌هوک رو اجرا می‌کنیم بدون پارامترهای اضافه که باعث ارور شدن
+    # اجرای وبهوک
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
