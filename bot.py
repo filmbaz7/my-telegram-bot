@@ -1,9 +1,11 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
+WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com/webhook'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
@@ -27,13 +29,13 @@ def get_movies():
         movies.append({
             'title': title.strip(),
             'link': link,
-            'rating': 'نامشخص',  # digitoon امتیاز نداره
+            'rating': 'نامشخص',
             'summary': 'توضیح موجود نیست',
             'image': image
         })
 
         if len(movies) >= 20:
-            break  # فقط 20 تا فیلم
+            break
 
     return movies
 
@@ -57,13 +59,21 @@ async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text(message, parse_mode='Markdown')
 
+async def set_webhook(app: Application):
+    await app.bot.set_webhook(WEBHOOK_URL)
+
 def main():
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    app.run_polling()
+    app.run_webhook(
+        listen='0.0.0.0',
+        port=int(os.environ.get('PORT', 10000)),
+        webhook_path='/webhook',
+        on_startup=set_webhook
+    )
 
 if __name__ == '__main__':
     main()
