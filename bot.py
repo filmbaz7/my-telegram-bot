@@ -1,90 +1,59 @@
 import os
 import asyncio
 import requests
-from urllib.parse import urlparse, parse_qs, unquote
 from bs4 import BeautifulSoup
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# اطلاعات شما:
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
 WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'
 PORT = int(os.environ.get('PORT', '8443'))
 
-# شروع
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را بفرست.")
 
-# استخراج فیلم‌ها از Digitoon
 def get_movies():
-    url = 'https://www.digitoon.tv/'
+    url = 'https://uptvs.com/category/moviesz'
     headers = {'User-Agent': 'Mozilla/5.0'}
     response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.content, 'lxml')
-
-    movie_names = soup.find_all('div', class_='intl-home-2_name__Kt3Dz')
-    movie_links = soup.find_all('a', class_='intl-home-2_card__c7h62')
+    soup = BeautifulSoup(response.content, 'html.parser')
 
     movies = []
-    for i in range(min(len(movie_names), len(movie_links))):
-        title = movie_names[i].text.strip()
-        
-        # لینک صفحه فیلم
-        href = movie_links[i].get('href')
-        link = f"https://www.digitoon.tv{href}" if href else '#'
+    for item in soup.select('div.post-item', limit=20):
+        title_tag = item.select_one('h2.title')
+        image_tag = item.select_one('img')
+        link_tag = item.select_one('a')
 
-        # عکس فیلم
-        image_tag = movie_links[i].find('img')
-        image = None
-        if image_tag:
-            src = image_tag.get('src') or ''
-            parsed_url = urlparse(src)
-            params = parse_qs(parsed_url.query)
-            real_url = params.get('url', [None])[0]
-            if real_url:
-                image = unquote(real_url)
-            else:
-                image = src
+        title = title_tag.get_text(strip=True) if title_tag else 'بدون عنوان'
+        image = image_tag['src'] if image_tag and 'src' in image_tag.attrs else None
+        link = link_tag['href'] if link_tag and 'href' in link_tag.attrs else '#'
 
         movies.append({
             'title': title,
             'link': link,
+            'image': image,
             'rating': 'نامشخص',
-            'summary': 'توضیحی موجود نیست',
-            'image': image
+            'summary': 'خلاصه‌ای موجود نیست'
         })
-
-        if len(movies) >= 20:
-            break
 
     return movies
 
-# فرمان /movies
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
     movies_list = get_movies()
     if not movies_list:
-        await update.message.reply_text("متاسفانه فیلمی پیدا نشد.")
+        await update.message.reply_text("متاسفانه نتونستم فیلمی پیدا کنم!")
         return
 
     for movie in movies_list:
-        title = movie['title']
-        url = movie['link']
-        rating = movie['rating']
-        summary = movie['summary']
-        image_url = movie['image']
-
-        message = f"🎬 *{title}*\n⭐ امتیاز: {rating}\n\n📖 خلاصه:\n{summary}\n\n🔗 [مشاهده فیلم]({url})"
-
-        if image_url:
-            await update.message.reply_photo(photo=image_url, caption=message, parse_mode='Markdown')
+        message = f"🎬 *{movie['title']}*\n⭐ امتیاز: {movie['rating']}\n\n📖 خلاصه:\n{movie['summary']}\n\n🔗 [مشاهده فیلم]({movie['link']})"
+        if movie['image']:
+            await update.message.reply_photo(photo=movie['image'], caption=message, parse_mode='Markdown')
         else:
             await update.message.reply_text(message, parse_mode='Markdown')
 
-# ست کردن وبهوک
 async def set_webhook(bot: Bot):
     await bot.set_webhook(url=WEBHOOK_URL)
 
-# تابع اصلی
 def main():
     app = Application.builder().token(TOKEN).build()
 
