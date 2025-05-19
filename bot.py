@@ -1,3 +1,4 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update
@@ -61,11 +62,14 @@ def main():
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
+    PORT = int(os.environ.get('PORT', '8443'))
+    WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com/webhook'
+
     app.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        webhook_path="/webhook",
-        webhook_url="https://my-telegram-bot-l8ts.onrender.com/webhook"
+        listen='0.0.0.0',
+        port=PORT,
+        path='/webhook',
+        webhook_url=WEBHOOK_URL
     )
 
 if __name__ == '__main__':
