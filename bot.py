@@ -1,11 +1,11 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
-WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'
+WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'  # آدرس وب‌هوک رندر تو
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
@@ -34,7 +34,6 @@ def get_movies():
 
         if len(movies) >= 20:
             break
-
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,16 +57,23 @@ async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(message, parse_mode='Markdown')
 
 def main():
-    app = Application.builder().token(TOKEN).build()
+    port = int(os.environ.get('PORT', 8443))  # پورت رندر
+    bot = Bot(token=TOKEN)
+    webhook_url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
 
+    app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    port = int(os.environ.get('PORT', 8443))  # پورت پیش‌فرض Render
+    # ست کردن وب‌هوک تو تلگرام
+    bot.set_webhook(url=webhook_url)
+
+    # اجرای وب‌هوک
     app.run_webhook(
         listen="0.0.0.0",
         port=port,
-        webhook_url=f"{WEBHOOK_URL}/webhook/{TOKEN}"
+        webhook_path=f"/webhook/{TOKEN}",
+        webhook_url=webhook_url,
     )
 
 if __name__ == '__main__':
