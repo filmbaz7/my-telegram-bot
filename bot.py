@@ -5,10 +5,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
-WEBHOOK_URL = f'https://my-telegram-bot-l8ts.onrender.com/webhook/{TOKEN}'
+WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies رو بزن.")
+    await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
 
 def get_movies():
     url = 'https://www.digitoon.tv/'
@@ -32,39 +32,42 @@ def get_movies():
             'image': image
         })
 
-        if len(movies) >= 10:
+        if len(movies) >= 20:
             break
 
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    movie_list = get_movies()
-    if not movie_list:
-        await update.message.reply_text("فیلمی پیدا نشد!")
+    movies_list = get_movies()
+    if not movies_list:
+        await update.message.reply_text("متاسفانه نتونستم فیلمی پیدا کنم!")
         return
 
-    for movie in movie_list:
-        msg = f"🎬 *{movie['title']}*\n⭐ امتیاز: {movie['rating']}\n📖 {movie['summary']}\n🔗 [مشاهده فیلم]({movie['link']})"
-        if movie['image']:
-            await update.message.reply_photo(photo=movie['image'], caption=msg, parse_mode='Markdown')
-        else:
-            await update.message.reply_text(msg, parse_mode='Markdown')
+    for movie in movies_list:
+        title = movie['title']
+        url = movie['link']
+        rating = movie['rating']
+        summary = movie['summary']
+        image_url = movie['image']
 
-async def set_webhook(app: Application):
-    await app.bot.set_webhook(WEBHOOK_URL)
+        message = f"🎬 *{title}*\n⭐ امتیاز: {rating}\n\n📖 خلاصه:\n{summary}\n\n🔗 [مشاهده فیلم]({url})"
+
+        if image_url:
+            await update.message.reply_photo(photo=image_url, caption=message, parse_mode='Markdown')
+        else:
+            await update.message.reply_text(message, parse_mode='Markdown')
 
 def main():
     app = Application.builder().token(TOKEN).build()
+
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('movies', movies))
 
-    # ثبت وب‌هوک در هنگام بالا آمدن
-    app.post_init = set_webhook
-
+    port = int(os.environ.get('PORT', 8443))  # پورت پیش‌فرض Render
     app.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
-        webhook_url=WEBHOOK_URL,
+        port=port,
+        webhook_url=f"{WEBHOOK_URL}/webhook/{TOKEN}"
     )
 
 if __name__ == '__main__':
