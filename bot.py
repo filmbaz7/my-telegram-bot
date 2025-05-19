@@ -37,7 +37,7 @@ def get_movies():
 
         if len(movies) >= 20:
             break
-
+  print("Movies found:", movies)  # اینجا اضافه کن
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
