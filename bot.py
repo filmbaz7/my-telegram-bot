@@ -1,20 +1,16 @@
-import os
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = '8029623606:AAEAEqoNkNq_B_oIPFhYFue0AjxK6vaX7fM'
-WEBHOOK_URL = 'https://my-telegram-bot-l8ts.onrender.com/webhook'
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
 
 def get_movies():
     url = 'https://www.digitoon.tv/'
-    headers = {
-        'User-Agent': 'Mozilla/5.0'
-    }
+    headers = {'User-Agent': 'Mozilla/5.0'}
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'lxml')
 
@@ -59,9 +55,6 @@ async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text(message, parse_mode='Markdown')
 
-async def set_webhook(app: Application):
-    await app.bot.set_webhook(WEBHOOK_URL)
-
 def main():
     app = Application.builder().token(TOKEN).build()
 
@@ -69,10 +62,10 @@ def main():
     app.add_handler(CommandHandler('movies', movies))
 
     app.run_webhook(
-        listen='0.0.0.0',
-        port=int(os.environ.get('PORT', 10000)),
-        webhook_path='/webhook',
-        on_startup=set_webhook
+        listen="0.0.0.0",
+        port=8443,
+        webhook_path="/webhook",
+        webhook_url="https://my-telegram-bot-l8ts.onrender.com/webhook"
     )
 
 if __name__ == '__main__':
