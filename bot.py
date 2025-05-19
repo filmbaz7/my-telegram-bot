@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -8,20 +9,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! برای دیدن لیست فیلم‌ها دستور /movies را ارسال کن.")
 
 def get_movies():
-    url = 'https://yts.mx/api/v2/list_movies.json?limit=20'  # 20 فیلم اول
-    response = requests.get(url)
-    data = response.json()
+    url = 'https://www.digitoon.tv/'
+    headers = {
+        'User-Agent': 'Mozilla/5.0'
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, 'lxml')
 
     movies = []
-    if data['status'] == 'ok' and data['data']['movie_count'] > 0:
-        for movie in data['data']['movies']:
-            movies.append({
-                'title': movie['title'],
-                'link': movie['url'],
-                'rating': movie.get('rating', 'ندارد'),
-                'summary': movie.get('summary', 'بدون توضیح'),
-                'image': movie.get('large_cover_image', None)
-            })
+    for item in soup.select('div.card-media'):
+        title = item.get('title') or 'بدون عنوان'
+        link_tag = item.find('a')
+        link = 'https://www.digitoon.tv' + link_tag['href'] if link_tag else '#'
+        image_tag = item.find('img')
+        image = image_tag['src'] if image_tag else None
+
+        movies.append({
+            'title': title.strip(),
+            'link': link,
+            'rating': 'نامشخص',  # digitoon امتیاز نداره
+            'summary': 'توضیح موجود نیست',
+            'image': image
+        })
+
+        if len(movies) >= 20:
+            break  # فقط 20 تا فیلم
+
     return movies
 
 async def movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
